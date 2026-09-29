@@ -1,0 +1,53 @@
+@page
+@model WhatsAppBot.Admin.Pages.Settings.Bot.IndexModel
+@{
+    ViewData["Title"] = "Configuración del bot";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">CONFIGURACIÓN</p>
+        <h1>Bot</h1>
+        <p class="muted">Controla si el bot está activo y cómo selecciona sus respuestas.</p>
+    </div>
+</section>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+@if (Model.SuccessMessage is not null)
+{
+    <div class="alert alert-success" role="status">@Model.SuccessMessage</div>
+}
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<form method="post" class="content-card settings-form">
+    <div class="settings-section">
+        <div>
+            <h2>Estado del bot</h2>
+            <p class="muted">El control se guardará en la configuración central de la API.</p>
+        </div>
+        <label class="toggle-control">
+            <input asp-for="IsBotEnabled" />
+            <span>Bot activo</span>
+        </label>
+    </div>
+
+    <div class="settings-section mode-section">
+        <div>
+            <h2>Modo de respuesta</h2>
+            <p class="muted">La IA no se invoca en este hito; FaqThenAi queda preparado para su siguiente etapa.</p>
+        </div>
+        <div class="mode-options">
+            <label><input type="radio" asp-for="ReplyMode" value="FaqOnly" /> <span><strong>Solo respuestas configuradas</strong><small>Si no hay coincidencia, el bot no responde.</small></span></label>
+            <label><input type="radio" asp-for="ReplyMode" value="FaqThenAi" /> <span><strong>Respuestas configuradas + IA fallback</strong><small>Busca primero en respuestas frecuentes; la IA podrá usarse después si no hay coincidencia.</small></span></label>
+            <label><input type="radio" asp-for="ReplyMode" value="AiOnly" /> <span><strong>Solo IA</strong><small>Omite la búsqueda FAQ. La integración de IA se habilitará posteriormente.</small></span></label>
+        </div>
+        <span asp-validation-for="ReplyMode" class="text-danger"></span>
+    </div>
+
+    <div class="settings-actions">
+        <button type="submit" class="btn btn-primary">Guardar configuración</button>
+    </div>
+</form>

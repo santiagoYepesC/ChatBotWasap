@@ -1,0 +1,690 @@
+openapi: 3.1.0
+info:
+  title: WhatsAppBot.Api
+  version: 1.0.0
+  description: >
+    Planning contract for the Admin-to-Api boundary and Meta webhook transport.
+    Controllers and webhook handlers delegate use cases to Business.
+servers:
+  - url: https://{apiHost}
+    variables:
+      apiHost:
+        default: localhost:7001
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/admin/auth/login:
+    post:
+      operationId: loginAdministrator
+      security: []
+      summary: Authenticate an administrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequestDTO"
+      responses:
+        "200":
+          description: Authenticated; access token is consumed server-side by Admin.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEAuthResponseDTO"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/admin/whatsapp/integration:
+    get:
+      operationId: getWhatsAppIntegration
+      summary: Get current WhatsApp connection status and non-secret metadata
+      responses:
+        "200":
+          description: Integration state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEWhatsAppIntegrationDTO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    delete:
+      operationId: disconnectWhatsAppIntegration
+      summary: Disconnect the current WhatsApp integration through the Api use case
+      responses:
+        "204":
+          description: Disconnected
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/admin/whatsapp/embedded-signup:
+    post:
+      operationId: completeEmbeddedSignup
+      summary: Complete server-side exchange and registration from Meta Embedded Signup
+      description: Never accepts an access token or App Secret from the browser.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmbeddedSignupCompletionRequestDTO"
+      responses:
+        "200":
+          description: Connection process result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEWhatsAppIntegrationDTO"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "502":
+          $ref: "#/components/responses/ExternalDependencyFailure"
+  /api/v1/admin/whatsapp/bot-configuration:
+    get:
+      operationId: getBotConfiguration
+      summary: Get bot activation and reply mode
+      responses:
+        "200":
+          description: Current bot configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEBotConfigurationDTO"
+    put:
+      operationId: updateBotConfiguration
+      summary: Update bot activation and reply mode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBotConfigurationRequestDTO"
+      responses:
+        "200":
+          description: Updated bot configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEBotConfigurationDTO"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/admin/frequent-responses:
+    get:
+      operationId: listFrequentResponses
+      summary: List configured bot responses
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: Frequent response page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEFrequentResponsePageDTO"
+    post:
+      operationId: createFrequentResponse
+      summary: Create a configured bot response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrequentResponseRequestDTO"
+      responses:
+        "201":
+          description: Created response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEFrequentResponseDTO"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/admin/frequent-responses/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+    get:
+      operationId: getFrequentResponse
+      summary: Get response and associated expressions
+      responses:
+        "200":
+          description: Frequent response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEFrequentResponseDTO"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateFrequentResponse
+      summary: Edit a configured bot response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FrequentResponseRequestDTO"
+      responses:
+        "200":
+          description: Updated response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEFrequentResponseDTO"
+    delete:
+      operationId: deleteFrequentResponse
+      summary: Delete a configured bot response
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/admin/frequent-responses/{id}/active:
+    patch:
+      operationId: setFrequentResponseActive
+      summary: Activate or deactivate a configured response
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isActive]
+              properties:
+                isActive:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated response state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEBoolean"
+  /api/v1/admin/conversations:
+    get:
+      operationId: listConversations
+      summary: List conversations for the connected number
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: Conversation page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEConversationPageDTO"
+  /api/v1/admin/conversations/{id}:
+    get:
+      operationId: getConversation
+      summary: Read conversation details and paginated messages
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: beforeMessageId
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Conversation detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseEConversationDetailDTO"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/admin/messages/{id}/media:
+    get:
+      operationId: getMessageMedia
+      summary: Stream authorized conversation media through Api
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Authorized media bytes
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+            audio/*:
+              schema:
+                type: string
+                format: binary
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /webhooks/meta/whatsapp:
+    get:
+      operationId: verifyMetaWebhook
+      security: []
+      summary: Verify Meta webhook subscription challenge
+      parameters:
+        - in: query
+          name: hub.mode
+          schema:
+            type: string
+        - in: query
+          name: hub.verify_token
+          schema:
+            type: string
+        - in: query
+          name: hub.challenge
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Raw challenge text when Verify Token matches
+          content:
+            text/plain:
+              schema:
+                type: string
+        "403":
+          description: Invalid verification token
+    post:
+      operationId: receiveMetaWebhook
+      security: []
+      summary: Validate Meta signature and persist webhook event
+      description: >
+        Validate the signature over raw bytes, then persist only a normalized allowlist of
+        event fields needed for processing. Do not retain/log the complete raw webhook body.
+      parameters:
+        - in: header
+          name: X-Hub-Signature-256
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Meta Cloud API message, status, or account event
+              additionalProperties: true
+      responses:
+        "200":
+          description: Event durably accepted; empty response body
+        "400":
+          description: Invalid event envelope
+        "401":
+          description: Invalid signature
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    BadRequest:
+      description: Input validation failure
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ResponseEError"
+    Unauthorized:
+      description: Authentication failure
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ResponseEError"
+    Forbidden:
+      description: Authorization failure
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ResponseEError"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ResponseEError"
+    ExternalDependencyFailure:
+      description: Meta/AI provider failure
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ResponseEError"
+  schemas:
+    ApiErrorDTO:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+    ResponseEAuthResponseDTO:
+      allOf:
+        - $ref: "#/components/schemas/ResponseEBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/AuthResponseDTO"
+    ResponseEWhatsAppIntegrationDTO:
+      allOf:
+        - $ref: "#/components/schemas/ResponseEBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/WhatsAppIntegrationDTO"
+    ResponseEBotConfigurationDTO:
+      allOf:
+        - $ref: "#/components/schemas/ResponseEBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/BotConfigurationDTO"
+    ResponseEFrequentResponseDTO:
+      allOf:
+        - $ref: "#/components/schemas/ResponseEBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/FrequentResponseDTO"
+    ResponseEFrequentResponsePageDTO:
+      allOf:
+        - $ref: "#/components/schemas/ResponseEBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/FrequentResponsePageDTO"
+    ResponseEConversationPageDTO:
+      allOf:
+        - $ref: "#/components/schemas/ResponseEBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/ConversationPageDTO"
+    ResponseEConversationDetailDTO:
+      allOf:
+        - $ref: "#/components/schemas/ResponseEBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/ConversationDetailDTO"
+    ResponseEBoolean:
+      allOf:
+        - $ref: "#/components/schemas/ResponseEBase"
+        - type: object
+          properties:
+            data:
+              type: boolean
+    ResponseEBase:
+      type: object
+      required: [success, traceId]
+      properties:
+        success:
+          type: boolean
+        error:
+          oneOf:
+            - $ref: "#/components/schemas/ApiErrorDTO"
+            - type: "null"
+        traceId:
+          type: string
+    ResponseEError:
+      allOf:
+        - $ref: "#/components/schemas/ResponseEBase"
+        - type: object
+          properties:
+            data:
+              type: "null"
+            error:
+              $ref: "#/components/schemas/ApiErrorDTO"
+    LoginRequestDTO:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    AuthResponseDTO:
+      type: object
+      required: [accessToken, expiresAtUtc]
+      properties:
+        accessToken:
+          type: string
+          description: Returned to the Admin server only, never to browser JavaScript.
+        expiresAtUtc:
+          type: string
+          format: date-time
+    EmbeddedSignupCompletionRequestDTO:
+      type: object
+      required: [authorizationCode, wabaId, phoneNumberId]
+      properties:
+        authorizationCode:
+          type: string
+          description: Single-use code returned by Meta SDK; exchange only server-to-server.
+        wabaId:
+          type: string
+        phoneNumberId:
+          type: string
+    WhatsAppIntegrationDTO:
+      type: object
+      required: [connectionState, botEnabled]
+      properties:
+        wabaId:
+          type: string
+        phoneNumberId:
+          type: string
+        businessPhoneNumber:
+          type: string
+        displayName:
+          type: string
+        connectionState:
+          type: string
+          enum: [NotConnected, Configuring, Connected, Error]
+        botEnabled:
+          type: boolean
+        connectedAtUtc:
+          type: string
+          format: date-time
+        hasCredentialReference:
+          type: boolean
+          description: Indicates server-side credentials are configured; never returns a secret.
+    BotConfigurationDTO:
+      type: object
+      required: [isBotEnabled, replyMode]
+      properties:
+        isBotEnabled:
+          type: boolean
+        replyMode:
+          type: string
+          enum: [FaqOnly, FaqThenAi, AiOnly]
+    UpdateBotConfigurationRequestDTO:
+      type: object
+      required: [isBotEnabled, replyMode]
+      properties:
+        isBotEnabled:
+          type: boolean
+        replyMode:
+          type: string
+          enum: [FaqOnly, FaqThenAi, AiOnly]
+    FrequentResponseRequestDTO:
+      type: object
+      required: [questionOrIntent, expressions, answerText, priority, isActive]
+      properties:
+        questionOrIntent:
+          type: string
+          maxLength: 500
+        expressions:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            minLength: 1
+            maxLength: 500
+        answerText:
+          type: string
+          minLength: 1
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        category:
+          type: string
+          maxLength: 100
+        isActive:
+          type: boolean
+    FrequentResponseDTO:
+      allOf:
+        - $ref: "#/components/schemas/FrequentResponseRequestDTO"
+        - type: object
+          required: [frequentResponseId, createdAtUtc, modifiedAtUtc]
+          properties:
+            frequentResponseId:
+              type: integer
+              format: int64
+            createdAtUtc:
+              type: string
+              format: date-time
+            modifiedAtUtc:
+              type: string
+              format: date-time
+    FrequentResponsePageDTO:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FrequentResponseDTO"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalCount:
+          type: integer
+    ConversationPageDTO:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationSummaryDTO"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalCount:
+          type: integer
+    ConversationSummaryDTO:
+      type: object
+      required: [conversationId, contact, lastMessageAtUtc, status]
+      properties:
+        conversationId:
+          type: integer
+          format: int64
+        contact:
+          type: string
+        lastMessageAtUtc:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [Open, Closed]
+        lastMessagePreview:
+          type: string
+    ConversationDetailDTO:
+      type: object
+      required: [conversation, messages]
+      properties:
+        conversation:
+          $ref: "#/components/schemas/ConversationSummaryDTO"
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageDTO"
+    MessageDTO:
+      type: object
+      required: [messageId, direction, messageType, processingState, createdAtUtc]
+      properties:
+        messageId:
+          type: integer
+          format: int64
+        direction:
+          type: string
+          enum: [Inbound, Outbound]
+        messageType:
+          type: string
+          enum: [Text, Audio, Image, Unsupported]
+        text:
+          type: string
+        transcription:
+          type: string
+        mediaAvailable:
+          type: boolean
+        mediaUrl:
+          type: string
+          format: uri
+          description: Authorized short-lived API URL, not a public object-store URL.
+        replySource:
+          type: string
+          enum: [FrequentResponse, AI, Admin]
+        processingState:
+          type: string
+          enum: [Received, Processing, Completed, Failed, NoReply]
+        outcomeCode:
+          type: string
+          description: Safe non-secret reason for a no-reply result, including messaging policy blocks.
+          enum: [MessagingWindowClosed, TemplateRequired, BotDisabled, NoFrequentResponse]
+        deliveryState:
+          type: string
+          enum: [Pending, Sent, Delivered, Read, Failed]
+        createdAtUtc:
+          type: string
+          format: date-time

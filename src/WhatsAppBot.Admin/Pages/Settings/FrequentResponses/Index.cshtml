@@ -1,0 +1,64 @@
+@page
+@model WhatsAppBot.Admin.Pages.Settings.FrequentResponses.IndexModel
+@{
+    ViewData["Title"] = "Respuestas frecuentes";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">CONFIGURACIÓN</p>
+        <h1>Respuestas frecuentes</h1>
+        <p class="muted">Administra respuestas y expresiones que el matcher determinista evaluará.</p>
+    </div>
+    <a asp-page="./Create" class="btn btn-primary">Nueva respuesta</a>
+</section>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<section class="content-card table-card">
+    @if (Model.Responses.Count == 0)
+    {
+        <div class="empty-state">
+            <span class="card-icon green">≋</span>
+            <h2>Aún no hay respuestas</h2>
+            <p class="muted">Crea una respuesta frecuente para definir el primer caso que el bot puede reconocer.</p>
+            <a asp-page="./Create" class="btn btn-primary">Crear respuesta</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table response-table align-middle mb-0">
+                <thead><tr><th>Pregunta / intención</th><th>Expresiones</th><th>Prioridad</th><th>Categoría</th><th>Estado</th><th>Creada</th><th>Modificada</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
+                <tbody>
+                @foreach (var response in Model.Responses)
+                {
+                    <tr>
+                        <td><strong>@response.QuestionOrIntent</strong><small class="response-answer">@response.AnswerText</small></td>
+                        <td>@string.Join(", ", response.Expressions)</td>
+                        <td><span class="priority-badge">@response.Priority</span></td>
+                        <td>@(response.Category ?? "—")</td>
+                        <td><span class="state-pill @(response.IsActive ? "ready" : "neutral")">@(response.IsActive ? "Activa" : "Inactiva")</span></td>
+                        <td>@response.CreatedAtUtc.ToLocalTime().ToString("g")</td>
+                        <td>@response.ModifiedAtUtc.ToLocalTime().ToString("g")</td>
+                        <td>
+                            <div class="row-actions">
+                                <a asp-page="./Edit" asp-route-id="@response.FrequentResponseId" class="btn btn-sm btn-outline-secondary">Editar</a>
+                                <form method="post" asp-page-handler="Toggle" asp-route-id="@response.FrequentResponseId">
+                                    <button class="btn btn-sm btn-outline-secondary" type="submit">@(response.IsActive ? "Desactivar" : "Activar")</button>
+                                </form>
+                                <form method="post" asp-page-handler="Delete" asp-route-id="@response.FrequentResponseId" onsubmit="return confirm('¿Eliminar esta respuesta frecuente?');">
+                                    <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

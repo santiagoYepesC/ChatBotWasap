@@ -1,0 +1,24 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using WhatsAppBot.Api.Business.Abstractions;
+using WhatsAppBot.Api.Business.Services;
+using WhatsAppBot.Api.Business.UseCases;
+using WhatsAppBot.Api.Business.UseCases.FrequentResponses;
+using WhatsAppBot.Api.Models.Entities;
+
+namespace WhatsAppBot.Api.Business.Extensions;
+
+public static class BusinessServiceCollectionExtensions
+{
+    public static IServiceCollection AddBusiness(this IServiceCollection services)
+    {
+        services.AddScoped<IAdministratorAuthenticator, AuthenticateAdministrator>();
+        services.AddScoped<IAdministratorBootstrapper, BootstrapAdministrator>();
+        services.AddScoped<IBotConfigurationService, BotConfigurationService>();
+        services.AddScoped<IFrequentResponseService, FrequentResponseService>();
+        services.AddSingleton<FrequentResponseMatcher>();
+        services.AddScoped<IBotReplyResolver, BotReplyResolver>();
+        services.AddSingleton<IPasswordHasher<Administrator>, PasswordHasher<Administrator>>();
+        return services;
+    }
+}

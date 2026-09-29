@@ -1,0 +1,43 @@
+using Microsoft.Data.SqlClient;
+using WhatsAppBot.Api.Infrastructure.Database;
+using WhatsAppBot.Api.Persistence.Repositories;
+
+namespace WhatsAppBot.Persistence.Tests;
+
+public sealed class LocalDbFixture
+{
+    public LocalDbFixture()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("WHATSAPPBOT_TEST_CONNECTION_STRING");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "Set WHATSAPPBOT_TEST_CONNECTION_STRING explicitly to the Development LocalDB test database.");
+        }
+
+        var parsed = new SqlConnectionStringBuilder(connectionString);
+        if (!parsed.DataSource.Contains("(localdb)", StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(parsed.InitialCatalog, "WhatsAppBot", StringComparison.OrdinalIgnoreCase) ||
+            !parsed.IntegratedSecurity)
+        {
+            throw new InvalidOperationException(
+                "Persistence tests are restricted to Windows-authenticated Development LocalDB database WhatsAppBot.");
+        }
+
+        ConnectionString = connectionString;
+        Executor = new StoredProcedureExecutor(new SqlConnectionFactory(connectionString));
+        ConfigurationRepository = new BotConfigurationRepository(Executor);
+        FrequentResponseRepository = new FrequentResponseRepository(Executor);
+    }
+
+    public string ConnectionString { get; }
+    public StoredProcedureExecutor Executor { get; }
+    public BotConfigurationRepository ConfigurationRepository { get; }
+    public FrequentResponseRepository FrequentResponseRepository { get; }
+}
+
+[CollectionDefinition(Name)]
+public sealed class LocalDbCollection : ICollectionFixture<LocalDbFixture>
+{
+    public const string Name = "Development LocalDB";
+}

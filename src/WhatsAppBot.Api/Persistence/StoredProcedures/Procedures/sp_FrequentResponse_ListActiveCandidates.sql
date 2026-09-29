@@ -1,0 +1,36 @@
+:ON ERROR EXIT
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+USE [WhatsAppBot];
+GO
+CREATE OR ALTER PROCEDURE dbo.sp_FrequentResponse_ListActiveCandidates
+    @IntegrationId uniqueidentifier
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        response.FrequentResponseId,
+        response.IntegrationId,
+        response.QuestionOrIntent,
+        response.AnswerText,
+        response.Priority,
+        response.Category,
+        response.IsActive,
+        response.CreatedAtUtc,
+        response.ModifiedAtUtc,
+        (
+            SELECT expression.ExpressionText
+            FROM dbo.FrequentResponseExpression AS expression
+            WHERE expression.FrequentResponseId = response.FrequentResponseId
+            ORDER BY expression.ExpressionId
+            FOR JSON PATH
+        ) AS ExpressionsJson
+    FROM dbo.FrequentResponse AS response
+    WHERE response.IntegrationId = @IntegrationId
+      AND response.IsActive = 1
+    ORDER BY response.Priority DESC, response.FrequentResponseId;
+END;
+GO

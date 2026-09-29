@@ -1,0 +1,6 @@
+:ON ERROR EXIT
+IF DB_ID(N'WhatsAppBot') IS NULL
+BEGIN
+    CREATE DATABASE [WhatsAppBot];
+END;
+GO

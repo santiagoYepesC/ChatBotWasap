@@ -1,0 +1,40 @@
+@model WhatsAppBot.Admin.Pages.Settings.FrequentResponses.FrequentResponseForm
+<form method="post" class="content-card settings-form response-form">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    <div class="mb-3">
+        <label asp-for="QuestionOrIntent" class="form-label">Pregunta, intención o descripción</label>
+        <input asp-for="QuestionOrIntent" class="form-control" maxlength="500" />
+        <span asp-validation-for="QuestionOrIntent" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Expressions" class="form-label">Palabras o expresiones</label>
+        <textarea asp-for="Expressions" class="form-control" rows="4" placeholder="Una expresión por línea"></textarea>
+        <div class="form-text">La coincidencia es literal, normalizada y no utiliza búsqueda aproximada.</div>
+        <span asp-validation-for="Expressions" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="AnswerText" class="form-label">Respuesta</label>
+        <textarea asp-for="AnswerText" class="form-control" rows="5"></textarea>
+        <span asp-validation-for="AnswerText" class="text-danger"></span>
+    </div>
+    <div class="form-grid">
+        <div class="mb-3">
+            <label asp-for="Priority" class="form-label">Prioridad (0–1000)</label>
+            <input asp-for="Priority" class="form-control" type="number" min="0" max="1000" />
+            <span asp-validation-for="Priority" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Category" class="form-label">Categoría (opcional)</label>
+            <input asp-for="Category" class="form-control" maxlength="100" />
+            <span asp-validation-for="Category" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-check mb-4">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label">Respuesta activa</label>
+    </div>
+    <div class="settings-actions">
+        <a asp-page="./Index" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Guardar respuesta</button>
+    </div>
+</form>

@@ -1,0 +1,56 @@
+# Build
+**/bin/
+**/obj/
+artifacts/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code local
+.vscode/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Tests
+TestResults/
+coverage/
+coverage.*
+*.trx
+
+# Logs
+logs/
+Logs/
+*.log
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# Local databases
+*.mdf
+*.ldf
+*.db
+*.db3
+
+# Environment / secrets
+.env
+.env.*
+*.secrets.json
+appsettings.Local.json
+appsettings.*.local.json
+
+# Certificates / private keys
+*.pfx
+*.p12
+*.key
+
+# OS
+Thumbs.db
+.DS_Store

@@ -1,0 +1,12 @@
+@page
+@model WhatsAppBot.Admin.Pages.Settings.FrequentResponses.CreateModel
+@{
+    ViewData["Title"] = "Nueva respuesta frecuente";
+}
+
+<section class="page-heading">
+    <div><p class="eyebrow">CONFIGURACIÓN · RESPUESTAS FRECUENTES</p><h1>Nueva respuesta</h1><p class="muted">Configura el contenido y las expresiones literales que activan esta respuesta.</p></div>
+    <a asp-page="./Index" class="btn btn-outline-secondary">Volver al listado</a>
+</section>
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+<partial name="_FrequentResponseForm" model="Model.Input" />

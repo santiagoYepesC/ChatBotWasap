@@ -1,0 +1,39 @@
+@page
+@model WhatsAppBot.Admin.Pages.Account.LoginModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Iniciar sesión";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · WhatsAppBot</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="login-page">
+    <main class="login-shell">
+        <section class="login-card">
+            <div class="brand-mark">W</div>
+            <p class="eyebrow">PANEL ADMINISTRATIVO</p>
+            <h1>Bienvenido</h1>
+            <p class="muted">Inicia sesión para administrar WhatsAppBot.</p>
+            <form method="post" class="mt-4">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <label asp-for="Input.Email" class="form-label">Correo electrónico</label>
+                <input asp-for="Input.Email" class="form-control form-control-lg" autocomplete="username" />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+                <label asp-for="Input.Password" class="form-label mt-3">Contraseña</label>
+                <input asp-for="Input.Password" class="form-control form-control-lg" autocomplete="current-password" />
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+                <button type="submit" class="btn btn-primary btn-lg w-100 mt-4">Iniciar sesión</button>
+            </form>
+            <p class="login-footnote">Acceso protegido · Conexión segura</p>
+        </section>
+    </main>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+</body>
+</html>
