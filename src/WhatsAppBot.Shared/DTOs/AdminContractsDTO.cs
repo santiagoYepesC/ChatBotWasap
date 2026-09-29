@@ -14,6 +14,9 @@ public sealed class WhatsAppIntegrationDTO
     public required bool BotEnabled { get; init; }
     public DateTimeOffset? ConnectedAtUtc { get; init; }
     public bool HasCredentialReference { get; init; }
+    public string? MetaAppId { get; init; }
+    public string? EmbeddedSignupConfigId { get; init; }
+    public string? MetaGraphApiVersion { get; init; }
 }
 
 public sealed class EmbeddedSignupCompletionRequestDTO

@@ -12,6 +12,10 @@ namespace WhatsAppBot.Admin.Services;
 public interface IWhatsAppBotApiClient
 {
     Task<ResponseE<AuthResponseDTO>?> LoginAsync(LoginRequestDTO request, CancellationToken cancellationToken);
+    Task<ResponseE<WhatsAppIntegrationDTO>?> GetWhatsAppIntegrationAsync(CancellationToken cancellationToken);
+    Task<ResponseE<WhatsAppIntegrationDTO>?> CompleteWhatsAppSignupAsync(
+        EmbeddedSignupCompletionRequestDTO request, CancellationToken cancellationToken);
+    Task DisconnectWhatsAppAsync(CancellationToken cancellationToken);
     Task<ResponseE<BotConfigurationDTO>?> GetBotConfigurationAsync(CancellationToken cancellationToken);
     Task<ResponseE<BotConfigurationDTO>?> UpdateBotConfigurationAsync(
         UpdateBotConfigurationRequestDTO request, CancellationToken cancellationToken);
@@ -44,6 +48,32 @@ public sealed class WhatsAppBotApiClient(HttpClient httpClient, IAdminSession ad
     public Task<ResponseE<BotConfigurationDTO>?> GetBotConfigurationAsync(
         CancellationToken cancellationToken) =>
         GetAsync<BotConfigurationDTO>("api/v1/admin/whatsapp/bot-configuration", cancellationToken);
+
+    public Task<ResponseE<WhatsAppIntegrationDTO>?> GetWhatsAppIntegrationAsync(
+        CancellationToken cancellationToken) =>
+        GetAsync<WhatsAppIntegrationDTO>("api/v1/admin/whatsapp/integration", cancellationToken);
+
+    public Task<ResponseE<WhatsAppIntegrationDTO>?> CompleteWhatsAppSignupAsync(
+        EmbeddedSignupCompletionRequestDTO request, CancellationToken cancellationToken) =>
+        SendAsync<WhatsAppIntegrationDTO>(
+            HttpMethod.Post, "api/v1/admin/whatsapp/embedded-signup", request, cancellationToken);
+
+    public async Task DisconnectWhatsAppAsync(CancellationToken cancellationToken)
+    {
+        using var request = CreateAuthorizedRequest(HttpMethod.Delete, "api/v1/admin/whatsapp/integration");
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                throw new HttpRequestException(
+                    "The administrator session is no longer authorized.", null, response.StatusCode);
+            }
+
+            var envelope = await ReadEnvelopeAsync<object?>(response, cancellationToken);
+            throw new AdminApiException(envelope?.Error?.Message ?? "No se pudo desconectar WhatsApp Business.");
+        }
+    }
 
     public Task<ResponseE<BotConfigurationDTO>?> UpdateBotConfigurationAsync(
         UpdateBotConfigurationRequestDTO request, CancellationToken cancellationToken) =>

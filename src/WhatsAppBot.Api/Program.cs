@@ -3,6 +3,7 @@ using WhatsAppBot.Api.Infrastructure.Bootstrap;
 using WhatsAppBot.Shared.Responses;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
+using WhatsAppBot.Api.Webhooks;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -63,6 +64,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapMetaWhatsAppWebhook();
 app.Run();
 
 public partial class Program;

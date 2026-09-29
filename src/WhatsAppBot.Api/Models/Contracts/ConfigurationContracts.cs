@@ -37,6 +37,13 @@ public sealed class BusinessValidationException(string message) : Exception(mess
 
 public sealed class BusinessNotFoundException(string resource) : Exception($"{resource} was not found.");
 
+public sealed class ExternalDependencyException(string safeCode, bool isTransient = false)
+    : Exception("An external service request could not be completed.")
+{
+    public string SafeCode { get; } = safeCode;
+    public bool IsTransient { get; } = isTransient;
+}
+
 public static class ReplyModeRules
 {
     public static bool IsSupported(BotReplyMode mode) => Enum.IsDefined(mode);

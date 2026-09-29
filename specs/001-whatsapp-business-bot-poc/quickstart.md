@@ -1,8 +1,8 @@
 # Quickstart de validación: POC de Bot de WhatsApp Business
 
-This guide covers the implemented solution/bootstrap milestone and the local bot-configuration
-and frequent-response milestone. Meta messaging, AI, multimedia, and conversation features
-remain subsequent implementation work.
+This guide covers the solution/bootstrap, bot configuration/FAQ, and Meta Embedded Signup plus
+signed text-webhook/outbox milestones. OpenAI, audio, photographs, and Admin conversation
+history remain subsequent work.
 
 ## Prerequisites
 
@@ -115,20 +115,24 @@ remain subsequent implementation work.
    and `https://localhost:7002` for Admin; Admin stores its API access token in server-side
    session storage and never sends database credentials to the browser.
 
-7. Later, when the WhatsApp/AI milestone is implemented, configure Meta and OpenAI secrets in
-   API User Secrets:
+7. Before connecting Meta, create/configure the Meta app as described in
+   [Meta Developers setup](#meta-developers-setup). Then configure only server-side Meta values
+   in the API project's User Secrets:
 
    ```powershell
    dotnet user-secrets set "Meta:AppId" "<app-id>" --project .\src\WhatsAppBot.Api
    dotnet user-secrets set "Meta:AppSecret" "<secret>" --project .\src\WhatsAppBot.Api
    dotnet user-secrets set "Meta:VerifyToken" "<random-secret>" --project .\src\WhatsAppBot.Api
    dotnet user-secrets set "Meta:EmbeddedSignupConfigId" "<config-id>" --project .\src\WhatsAppBot.Api
-   dotnet user-secrets set "Meta:GraphApiVersion" "<approved-version>" --project .\src\WhatsAppBot.Api
-   dotnet user-secrets set "OpenAI:ApiKey" "<provider-key>" --project .\src\WhatsAppBot.Api
+   dotnet user-secrets set "Meta:GraphApiVersion" "<supported-version>" --project .\src\WhatsAppBot.Api
+   dotnet user-secrets set "Meta:PhoneNumberRegistrationPin" "<six-digit-pin>" --project .\src\WhatsAppBot.Api
    ```
 
-   Replace placeholders only in the local secret store. Never paste values into source,
-   screenshots, logs, or this guide.
+   Replace placeholders only in the local secret store. The business access token is exchanged
+   server-to-server from Embedded Signup and written to User Secrets; SQL stores only its
+   generated secret reference. Never paste values into source, screenshots, logs, or this guide.
+   The Meta `AppId`, Signup configuration ID, and Graph version are public SDK configuration;
+   App Secret, Verify Token, registration PIN and business token stay server-side.
 8. Restore and build:
 
    ```powershell
@@ -148,13 +152,19 @@ remain subsequent implementation work.
    responses are managed from the Configuration navigation.
 
 10. Use Configuración → Bot to activate/deactivate the bot and select `FaqOnly`, `FaqThenAi`,
-    or `AiOnly`. The default remains `FaqThenAi`; no AI provider is called in this milestone.
-11. Use Configuración → Respuestas Frecuentes to create, edit, activate/deactivate, and delete
+    or `AiOnly`. The default remains `FaqThenAi`; this milestone does not call an AI provider
+    and records a no-reply result for AI-required modes rather than inventing content.
+11. Use Configuración → WhatsApp Business and complete the official Embedded Signup flow. The
+    backend exchanges the one-time code, checks that the selected Phone Number ID belongs to
+    the selected WABA, registers the number, subscribes the app to the WABA, stores the token
+    in User Secrets, and only then reports Connected. A canceled or incomplete flow is never
+    reported as connected.
+12. Use Configuración → Respuestas Frecuentes to create, edit, activate/deactivate, and delete
     FAQ responses. Put one literal word or phrase per line. The matcher applies Unicode Form KC,
     trims and collapses whitespace, compares invariant case-insensitive literal containment,
     selects the highest priority, and breaks ties by ascending stable response ID. This local
     configuration slice requires neither Meta nor OpenAI credentials.
-12. Run automated checks. Persistence tests are guarded by an explicit Development LocalDB
+13. Run automated checks. Persistence tests are guarded by an explicit Development LocalDB
     connection string and reject non-LocalDB targets:
 
     ```powershell
@@ -162,6 +172,48 @@ remain subsequent implementation work.
     dotnet test .\WhatsAppBot.sln --configuration Release
     Remove-Item Env:WHATSAPPBOT_TEST_CONNECTION_STRING
     ```
+
+## Meta Developers setup
+
+1. Confirm the organization is an approved Meta **Tech Provider** or **Solution Partner** (or
+   partnered with one) and has completed the access verification applicable to its account.
+   Meta's current Embedded Signup implementation guide lists this as a prerequisite. Create or
+   select a Meta app associated with the business portfolio and add the official **WhatsApp**
+   product. Use Cloud API only; do not use WhatsApp Web automation or client simulators.
+2. In Facebook Login for Business, create a configuration from Meta's **WhatsApp Embedded
+   Signup Configuration With 60 Expiration Token** template and select the Cloud API product
+   only. The flow selects its required assets/permissions (`whatsapp_business_management` and
+   `whatsapp_business_messaging`). Complete applicable business verification and App
+   Review/Advanced Access. Record the public App ID and configuration ID.
+3. In Facebook Login for Business settings, enable Client OAuth, Web OAuth, Enforce HTTPS,
+   Embedded Browser OAuth and JavaScript SDK login. Add the HTTPS Admin origin to Allowed
+   Domains and Valid OAuth Redirect URIs. Only test from that registered HTTPS origin.
+4. Choose a six-digit WhatsApp phone-number registration PIN for the selected business number
+   and set it only as `Meta:PhoneNumberRegistrationPin` in API User Secrets. Complete the
+   official number-ownership verification in Embedded Signup; do not type a phone number into
+   the app as a substitute for Meta authorization or verification.
+5. Expose the API over a stable **public HTTPS** hostname. Local `https://localhost:7001` is
+   not reachable by Meta; use an approved HTTPS tunnel or deploy a development API endpoint.
+   Register that exact callback URL in the app's WhatsApp **Webhooks** configuration:
+   `https://<public-api-host>/webhooks/meta/whatsapp`
+6. Generate a random Verify Token, set it in API User Secrets as `Meta:VerifyToken`, and enter
+   the same value in Meta's webhook verification form. Subscribe the app to the `account_update`
+   and `messages` webhook fields. Set the callback URL and Verify Token, then run Meta's GET
+   verification test.
+   The POST endpoint validates `X-Hub-Signature-256` with the server-only App Secret before
+   parsing or persisting allowlisted event fields.
+7. Start the API and Admin, sign in, and select Configuración → WhatsApp Business → Conectar.
+   Complete the Meta-hosted account/number selection and ownership verification. Confirm the
+   Admin shows WABA ID, Phone Number ID and the verified business number as connected.
+8. From an opted-in Meta test recipient, start a customer-initiated WhatsApp conversation and
+   send a text matching an active FAQ while the 24-hour customer-service window is open. The
+   signed webhook is durably added to inbox, the inbound text is persisted, Business checks
+   reply mode and policy, and only an allowed FAQ candidate enters the SQL outbox. The outbox
+   worker rechecks the window before using the official Cloud API sender.
+9. This milestone deliberately does not call OpenAI: `FaqOnly` misses become no-reply,
+   `FaqThenAi` misses and `AiOnly` are stored as `AiFallbackNotConfigured` no-reply outcomes.
+   Free-form FAQ replies are not Meta templates and cannot bypass a closed window. No
+   template-authoring or template-sending UI is implemented.
 
 ## Validation scenarios
 

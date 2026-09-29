@@ -11,6 +11,12 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<IAdministratorRepository, AdminRepository>();
         services.AddScoped<IBotConfigurationRepository, BotConfigurationRepository>();
         services.AddScoped<IFrequentResponseRepository, FrequentResponseRepository>();
+        services.AddScoped<IWhatsAppIntegrationRepository, WhatsAppIntegrationRepository>();
+        services.AddScoped<IWebhookInboxRepository, WebhookInboxRepository>();
+        services.AddScoped<IContactRepository, ContactRepository>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<IMessageOutboxRepository, MessageOutboxRepository>();
         return services;
     }
 }

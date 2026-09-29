@@ -350,6 +350,10 @@ paths:
       responses:
         "200":
           description: Event durably accepted; empty response body
+        "413":
+          description: Webhook request exceeds the configured body size limit
+        "415":
+          description: Webhook content type is not application/json
         "400":
           description: Invalid event envelope
         "401":
@@ -535,6 +539,15 @@ components:
         hasCredentialReference:
           type: boolean
           description: Indicates server-side credentials are configured; never returns a secret.
+        metaAppId:
+          type: string
+          description: Public Meta application ID used by the Embedded Signup SDK.
+        embeddedSignupConfigId:
+          type: string
+          description: Public Embedded Signup configuration ID.
+        metaGraphApiVersion:
+          type: string
+          description: Configured Graph API version used by the Meta SDK.
     BotConfigurationDTO:
       type: object
       required: [isBotEnabled, replyMode]
