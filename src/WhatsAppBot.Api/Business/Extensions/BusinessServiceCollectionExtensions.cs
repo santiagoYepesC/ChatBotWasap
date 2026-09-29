@@ -4,6 +4,7 @@ using WhatsAppBot.Api.Business.Abstractions;
 using WhatsAppBot.Api.Business.Services;
 using WhatsAppBot.Api.Business.UseCases;
 using WhatsAppBot.Api.Business.UseCases.FrequentResponses;
+using WhatsAppBot.Api.Business.Workers;
 using WhatsAppBot.Api.Models.Entities;
 
 namespace WhatsAppBot.Api.Business.Extensions;
@@ -18,6 +19,12 @@ public static class BusinessServiceCollectionExtensions
         services.AddScoped<IFrequentResponseService, FrequentResponseService>();
         services.AddSingleton<FrequentResponseMatcher>();
         services.AddScoped<IBotReplyResolver, BotReplyResolver>();
+        services.AddScoped<IWhatsAppIntegrationService, WhatsAppIntegrationService>();
+        services.AddScoped<IAcceptMetaWebhookEvent, AcceptMetaWebhookEvent>();
+        services.AddScoped<IProcessInboundText, ProcessInboundText>();
+        services.AddScoped<MessageProcessingService>();
+        services.AddHostedService<WebhookInboxWorker>();
+        services.AddHostedService<MessageOutboxWorker>();
         services.AddSingleton<IPasswordHasher<Administrator>, PasswordHasher<Administrator>>();
         return services;
     }

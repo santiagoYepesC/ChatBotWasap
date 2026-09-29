@@ -6,6 +6,8 @@ using WhatsAppBot.Api.Infrastructure.Bootstrap;
 using WhatsAppBot.Api.Infrastructure.Database;
 using WhatsAppBot.Api.Infrastructure.Options;
 using WhatsAppBot.Api.Infrastructure.Security;
+using WhatsAppBot.Api.Business.Services;
+using WhatsAppBot.Api.Infrastructure;
 
 namespace WhatsAppBot.Api.Infrastructure.Extensions;
 
@@ -33,7 +35,13 @@ public static class InfrastructureServiceCollectionExtensions
                 $"ConnectionStrings:{DatabaseOptions.ConnectionStringName} is required.")
             .ValidateOnStart();
         services.AddSingleton<ISqlConnectionFactory>(new SqlConnectionFactory(connectionString));
-        services.AddOptions<MetaOptions>().Bind(configuration.GetSection(MetaOptions.SectionName));
+        services.AddOptions<MetaOptions>()
+            .Bind(configuration.GetSection(MetaOptions.SectionName))
+            .Validate(options => options.WebhookMaxBodyBytes is >= 1024 and <= 1048576,
+                "Meta:WebhookMaxBodyBytes must be between 1024 and 1048576.")
+            .Validate(options => options.WorkerBatchSize is >= 1 and <= 100,
+                "Meta:WorkerBatchSize must be between 1 and 100.")
+            .ValidateOnStart();
         services.AddOptions<AiOptions>().Bind(configuration.GetSection(AiOptions.SectionName));
         services.AddOptions<MediaStorageOptions>().Bind(configuration.GetSection(MediaStorageOptions.SectionName));
         services.AddOptions<ApiOptions>().Bind(configuration.GetSection(ApiOptions.SectionName))
@@ -74,6 +82,12 @@ public static class InfrastructureServiceCollectionExtensions
             });
         services.AddAuthorization();
         services.AddSingleton<IAccessTokenIssuer, AccessTokenIssuer>();
+        services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<IWhatsAppMessagingPolicy, WhatsAppMessagingPolicy>();
+        services.AddSingleton<UserSecretsSecretStore>();
+        services.AddSingleton<ISecretStore>(provider => provider.GetRequiredService<UserSecretsSecretStore>());
+        services.AddSingleton<ISecretReferenceResolver>(provider =>
+            provider.GetRequiredService<UserSecretsSecretStore>());
         services.AddScoped<BootstrapCommand>();
         return services;
     }

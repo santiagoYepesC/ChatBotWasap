@@ -28,12 +28,16 @@ public sealed class LocalDbFixture
         Executor = new StoredProcedureExecutor(new SqlConnectionFactory(connectionString));
         ConfigurationRepository = new BotConfigurationRepository(Executor);
         FrequentResponseRepository = new FrequentResponseRepository(Executor);
+        WebhookInboxRepository = new WebhookInboxRepository(Executor);
+        OutboxRepository = new MessageOutboxRepository(Executor);
     }
 
     public string ConnectionString { get; }
     public StoredProcedureExecutor Executor { get; }
     public BotConfigurationRepository ConfigurationRepository { get; }
     public FrequentResponseRepository FrequentResponseRepository { get; }
+    public WebhookInboxRepository WebhookInboxRepository { get; }
+    public MessageOutboxRepository OutboxRepository { get; }
 }
 
 [CollectionDefinition(Name)]

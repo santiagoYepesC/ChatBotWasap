@@ -8,6 +8,9 @@ public sealed class MetaOptions
     public string? VerifyToken { get; init; }
     public string? EmbeddedSignupConfigId { get; init; }
     public string? GraphApiVersion { get; init; }
+    public string? PhoneNumberRegistrationPin { get; init; }
+    public int WebhookMaxBodyBytes { get; init; } = 262144;
+    public int WorkerBatchSize { get; init; } = 20;
 }
 
 public sealed class AiOptions

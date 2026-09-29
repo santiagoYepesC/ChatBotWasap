@@ -1,0 +1,176 @@
+@page
+@model WhatsAppBot.Admin.Pages.Settings.WhatsApp.IndexModel
+@using WhatsAppBot.Shared.Enums
+@{
+    ViewData["Title"] = "WhatsApp Business";
+    var integration = Model.Integration;
+    var canStartSignup = !string.IsNullOrWhiteSpace(integration?.MetaAppId)
+        && !string.IsNullOrWhiteSpace(integration.EmbeddedSignupConfigId)
+        && !string.IsNullOrWhiteSpace(integration.MetaGraphApiVersion)
+        && integration.ConnectionState != ConnectionState.Connected;
+}
+
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">INTEGRACIONES</span>
+        <h1>WhatsApp Business</h1>
+        <p class="page-subtitle">Conecta un número empresarial mediante la autorización oficial de Meta.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+{
+    <div class="alert alert-success" role="status">@Model.SuccessMessage</div>
+}
+
+<section class="content-card">
+    <div class="d-flex justify-content-between align-items-start gap-3">
+        <div>
+            <span class="eyebrow">ESTADO DE LA CONEXIÓN</span>
+            <h2 class="h4 mt-2">@Model.ConnectionLabel(integration?.ConnectionState)</h2>
+            <p class="text-muted mb-0">
+                @if (integration?.ConnectionState == ConnectionState.Connected)
+                {
+                    <span>El número se autorizó y registró a través de Meta Embedded Signup.</span>
+                }
+                else
+                {
+                    <span>Escribir un número no lo conecta. Completa la autorización y verificación de Meta.</span>
+                }
+            </p>
+        </div>
+        <span class="badge @(integration?.ConnectionState == ConnectionState.Connected ? "text-bg-success" : "text-bg-secondary")">
+            @Model.ConnectionLabel(integration?.ConnectionState)
+        </span>
+    </div>
+
+    @if (integration?.ConnectionState == ConnectionState.Connected)
+    {
+        <hr />
+        <dl class="row mb-3">
+            <dt class="col-sm-4">Número empresarial</dt>
+            <dd class="col-sm-8">@(integration.BusinessPhoneNumber ?? "No informado")</dd>
+            <dt class="col-sm-4">Nombre mostrado</dt>
+            <dd class="col-sm-8">@(integration.DisplayName ?? "No informado")</dd>
+            <dt class="col-sm-4">WABA ID</dt>
+            <dd class="col-sm-8"><code>@integration.WabaId</code></dd>
+            <dt class="col-sm-4">Phone Number ID</dt>
+            <dd class="col-sm-8"><code>@integration.PhoneNumberId</code></dd>
+            <dt class="col-sm-4">Bot</dt>
+            <dd class="col-sm-8">@(integration.BotEnabled ? "Activo" : "Inactivo")</dd>
+        </dl>
+        <form method="post" asp-page-handler="Disconnect">
+            <button type="submit" class="btn btn-outline-danger">Desconectar WhatsApp</button>
+        </form>
+    }
+    else
+    {
+        <hr />
+        @if (canStartSignup)
+        {
+            <p>Autoriza la cuenta empresarial, elige o registra un número y completa la verificación solicitada por Meta.</p>
+            <button id="connectMeta" type="button" class="btn btn-primary">Conectar WhatsApp Business</button>
+            <p id="signupStatus" class="small text-muted mt-3" role="status"></p>
+            <form id="completeSignup" method="post" asp-page-handler="CompleteSignup" class="d-none">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="AuthorizationCode" />
+                <input type="hidden" asp-for="WabaId" />
+                <input type="hidden" asp-for="PhoneNumberId" />
+            </form>
+        }
+        else
+        {
+            <div class="alert alert-warning mb-0">
+                El Embedded Signup no está configurado. Configura Meta:AppId, Meta:EmbeddedSignupConfigId
+                y Meta:GraphApiVersion en los User Secrets del API.
+            </div>
+        }
+    }
+</section>
+
+@if (canStartSignup)
+{
+    <script>
+        const metaAppId = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(integration!.MetaAppId));
+        const signupConfigId = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(integration.EmbeddedSignupConfigId));
+        const graphVersion = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(integration.MetaGraphApiVersion));
+        let authorizationCode = null;
+        let selectedAssets = null;
+
+        window.fbAsyncInit = function () {
+            FB.init({ appId: metaAppId, cookie: true, xfbml: false, version: graphVersion });
+        };
+
+        (function (document, script, id) {
+            if (document.getElementById(id)) return;
+            const sdk = document.createElement(script);
+            sdk.id = id;
+            sdk.src = "https://connect.facebook.net/en_US/sdk.js";
+            document.head.appendChild(sdk);
+        })(document, "script", "facebook-jssdk");
+
+        function finishSignupWhenReady() {
+            if (!authorizationCode || !selectedAssets) return;
+            document.getElementById("AuthorizationCode").value = authorizationCode;
+            document.getElementById("WabaId").value = selectedAssets.wabaId;
+            document.getElementById("PhoneNumberId").value = selectedAssets.phoneNumberId;
+            document.getElementById("signupStatus").textContent = "Finalizando conexión segura con Meta…";
+            document.getElementById("completeSignup").requestSubmit();
+        }
+
+        window.addEventListener("message", function (event) {
+            let origin;
+            try {
+                origin = new URL(event.origin);
+            } catch {
+                return;
+            }
+            if (origin.protocol !== "https:" ||
+                !(origin.hostname === "facebook.com" || origin.hostname.endsWith(".facebook.com"))) return;
+            let message;
+            try {
+                message = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+            } catch {
+                return;
+            }
+            if (message?.type !== "WA_EMBEDDED_SIGNUP") return;
+            if (message.event === "CANCEL" || message.event === "ERROR") {
+                document.getElementById("signupStatus").textContent = "El proceso de Meta se canceló o no se completó.";
+                return;
+            }
+            if (message.event === "FINISH") {
+                const data = message.data || {};
+                selectedAssets = {
+                    wabaId: data.waba_id || data.wabaId,
+                    phoneNumberId: data.phone_number_id || data.phoneNumberId
+                };
+                finishSignupWhenReady();
+            }
+        });
+
+        document.getElementById("connectMeta").addEventListener("click", function () {
+            if (!window.FB) {
+                document.getElementById("signupStatus").textContent = "No se pudo cargar el SDK de Meta.";
+                return;
+            }
+            document.getElementById("signupStatus").textContent = "Esperando autorización y selección de activos en Meta…";
+            FB.login(function (response) {
+                authorizationCode = response?.authResponse?.code || null;
+                if (!authorizationCode) {
+                    document.getElementById("signupStatus").textContent = "Meta no devolvió un código de autorización.";
+                    return;
+                }
+                finishSignupWhenReady();
+            }, {
+                config_id: signupConfigId,
+                response_type: "code",
+                override_default_response_type: true,
+                extras: { setup: {} }
+            });
+        });
+    </script>
+}
